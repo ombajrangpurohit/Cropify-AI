@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Landing from './components/Landing';
 import Scanner from './components/Scanner';
-import Results from './components/Results';
+import Results from './components/ResultsCard';
 
 function App() {
   // 1. Initialize Dark Mode from Local Storage (Defaults to light mode if nothing is saved)
