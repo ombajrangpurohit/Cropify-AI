@@ -20,10 +20,11 @@ class ApiConfig(AppConfig):
         base_dir = r'D:\IEEE ML' 
         
         self.expert_models = {
-            'apple': keras.models.load_model(f'{base_dir}\\apple model.h5'),
-            'corn': keras.models.load_model(f'{base_dir}\\corn model.h5'),
-            'potato': keras.models.load_model(f'{base_dir}\\potato model.h5'),
-            'tomato': keras.models.load_model(f'{base_dir}\\tomato model.h5')
+            'apple': keras.models.load_model('ml_models\\apple model.h5'),
+            'corn': keras.models.load_model('ml_models\\corn model.h5'),
+            'potato': keras.models.load_model('ml_models\\potato model.h5'),
+            'tomato': keras.models.load_model('ml_models\\tomato model.h5'),
+            'grapes': keras.models.load_model('ml_models\\grapes model.h5')
         }
 
         self.class_labels = {
