@@ -3,15 +3,14 @@
     "tmVersion": "2.4.12",
     "packageVersion": "0.8.4-alpha2",
     "packageName": "@teachablemachine/image",
-    "timeStamp": "2026-03-29T15:44:41.334Z",
+    "timeStamp": "2026-03-30T10:56:53.194Z",
     "userMetadata": {},
     "modelName": "tm-my-image-model",
     "labels": [
-        "apple",
-        "corn",
-        "tomato",
-        "potato",
-        "grapes"
+        "Apple - healthy",
+        "Apple - Apple scab",
+        "Apple - Cedar apple rust",
+        "Apple - Black rot"
     ],
     "imageSize": 224
 }

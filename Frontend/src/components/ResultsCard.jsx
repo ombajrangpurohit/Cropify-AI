@@ -2,18 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 // --- Custom Typewriter Component ---
-const TypewriterText = ({ text, delay = 0 }) => {
+const TypewriterText = ({ text = "", delay = 0 }) => {
   const [displayedText, setDisplayedText] = useState('');
 
   useEffect(() => {
     setDisplayedText('');
     let i = 0;
     
+    // Safety check just in case text is undefined or null
+    if (!text) return;
+
+    // 🔥 THE FIX: Force whatever Gemini sent into a pure String.
+    // If it's an Array (like ["Step 1", "Step 2"]), join it with line breaks.
+    const safeText = Array.isArray(text) ? text.join('\n') : String(text);
+
+    // Now it is 100% safe to run .replace()
+    const cleanText = safeText.replace(/\*\*/g, '').replace(/\*/g, '');
+
     const startTimer = setTimeout(() => {
       const typingInterval = setInterval(() => {
-        setDisplayedText(text.substring(0, i + 1));
+        setDisplayedText(cleanText.substring(0, i + 1));
         i++;
-        if (i >= text.length) clearInterval(typingInterval);
+        if (i >= cleanText.length) clearInterval(typingInterval);
       }, 15); 
       
       return () => clearInterval(typingInterval);
@@ -30,19 +40,24 @@ const TypewriterText = ({ text, delay = 0 }) => {
 const ResultsCard = ({ data, onReset }) => {
   if (!data) return null;
 
-  const severityColor = 
-    data.severity.toLowerCase() === 'high' ? 'bg-red-500 text-white shadow-red-500/30' :
-    data.severity.toLowerCase() === 'medium' ? 'bg-amber-500 text-white shadow-amber-500/30' :
-    'bg-emerald-500 text-white shadow-emerald-500/30';
+  // 🔥 FIX 2: Force the severity to be a single word (cuts off Gemini's rambling paragraphs)
+  const rawSeverity = data.severity || "";
+  const cleanSeverity = rawSeverity.split(/[ .\n,]/)[0].replace(/[^a-zA-Z]/g, '');
+
+  // Calculate color using the newly cleaned, single-word severity
+  const severityColor = cleanSeverity ? (
+    cleanSeverity.toLowerCase().includes('high') || cleanSeverity.toLowerCase().includes('critical') ? 'bg-red-500 text-white shadow-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.5)]' :
+    cleanSeverity.toLowerCase().includes('medium') || cleanSeverity.toLowerCase().includes('moderate') ? 'bg-amber-500 text-white shadow-amber-500/30' :
+    'bg-emerald-500 text-white shadow-emerald-500/30'
+  ) : '';
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      // Expanded width to 4xl for the desktop grid look
       className="w-full max-w-4xl mx-auto mt-8 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
     >
-      {/* 1. TOP HEADER - Spans full width */}
+      {/* 1. TOP HEADER */}
       <div className="p-6 md:p-8 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 relative overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
@@ -54,9 +69,13 @@ const ResultsCard = ({ data, onReset }) => {
               {data.name}
             </h2>
           </div>
-          <span className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide shadow-lg ${severityColor}`}>
-            {data.severity} Risk
-          </span>
+          
+          {/* Renders the badge using cleanSeverity */}
+          {cleanSeverity && (
+            <span className={`inline-flex items-center justify-center px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wide whitespace-nowrap ${severityColor}`}>
+              {cleanSeverity} Risk
+            </span>
+          )}
         </div>
 
         {/* Confidence Bar */}
@@ -88,7 +107,7 @@ const ResultsCard = ({ data, onReset }) => {
             </h3>
           </div>
           <p className="text-sm text-blue-800 dark:text-blue-200/80 font-medium leading-relaxed flex-grow">
-            <TypewriterText text={data.weather_warning} delay={500} />
+            <TypewriterText text={data.weather_warning || data.weatherContext} delay={500} />
           </p>
         </div>
 
@@ -114,7 +133,7 @@ const ResultsCard = ({ data, onReset }) => {
             </h3>
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
-            <TypewriterText text={data.reasons} delay={2500} />
+            <TypewriterText text={data.reasons || data.rootCause} delay={2500} />
           </p>
         </div>
 
@@ -135,12 +154,6 @@ const ResultsCard = ({ data, onReset }) => {
 
       {/* 3. BOTTOM ACTION BAR */}
       <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex flex-col md:flex-row gap-4 justify-end">
-        
-        {/* Placeholder for future buttons */}
-        <div className="flex gap-2 w-full md:w-auto">
-          {/* We will put PDF, TTS, and WhatsApp buttons here later */}
-        </div>
-
         <button 
           onClick={onReset}
           className="w-full md:w-auto px-8 py-3 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/30 active:scale-95"

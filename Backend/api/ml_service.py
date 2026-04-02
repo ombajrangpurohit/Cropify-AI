@@ -18,6 +18,7 @@ def get_plant_type(image_file):
         Identify the type of plant leaf in this image. 
         You must strictly choose from one of these four options: apple, corn, potato, tomato.
         Respond with ONLY the single word in lowercase. Do not include the word 'leaf'.
+        
         """
         response = client.models.generate_content(
             model='gemini-2.5-flash',
@@ -50,27 +51,47 @@ def generate_medical_json(plant_type, disease_name):
             "remedy": "Continue your current watering and sunlight routine!"
         }
 
+    # 🔥 THE FIX: Changed persona, banned Markdown, and forced simple JSON structure
+    # 🔥 THE FIX: Adjusted for "Medium" detail level. Still banning markdown.
     prompt = f"""
-    You are an expert agricultural botanist. A {plant_type} leaf has been diagnosed with: {disease_name}.
-    Return ONLY a valid JSON object with the following keys and detailed string values:
-    "severity" (Low, Medium, or High),
-    "weather_warning" (How weather affects this disease),
-    "symptoms" (What to look for),
-    "reasons" (Pathogen or cause),
-    "remedy" (Step-by-step treatment)
-    Do not include markdown formatting like ```json.
+    You are an empathetic, highly knowledgeable agricultural advisor talking directly to a local farmer. 
+    A {plant_type} crop has been diagnosed with: {disease_name}.
+    
+    CRITICAL RULES:
+    1. Speak in clear, professional, but accessible language. Explain the "why" and "how" without getting bogged down in dense academic jargon. 
+    2. Give practical, cheap, and accessible solutions that a farmer can do today.
+    3. DO NOT use any Markdown formatting. NEVER use asterisks (*) or bold text.
+    
+    Return ONLY a valid JSON object with the following keys. Do not include extra text.
+    {{
+        "severity": "Choose exactly one word: Low, Medium, High, or Critical",
+        "weather_warning": "1 to 2 sentences explaining exactly how current or upcoming weather makes this better or worse.",
+        "symptoms": "A detailed paragraph (3 to 4 sentences) describing the visual symptoms, how the damage progresses over time, and exactly where on the plant to look.",
+        "reasons": "A detailed explanation (2 to 3 sentences) of the root cause. Mention if it's a fungus, bacteria, pest, or deficiency, and what conditions caused it to spread.",
+        "remedy": "Numbered list of 3 to 4 detailed, actionable steps the farmer must take to save the crop."
+    }}
     """
     
     response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
     
-    # Clean the response and parse it into a Python dictionary
+    # 🧹 ROBUST JSON CLEANER: Better than the old slicing method
     raw_text = response.text.strip()
+    
     if raw_text.startswith("```json"):
-        raw_text = raw_text[7:-3].strip()
+        raw_text = raw_text[7:]
+    elif raw_text.startswith("```"):
+        raw_text = raw_text[3:]
+        
+    if raw_text.endswith("```"):
+        raw_text = raw_text[:-3]
+        
+    raw_text = raw_text.strip()
         
     try:
         return json.loads(raw_text)
-    except:
+    except Exception as e:
+        print(f"JSON Parsing Error: {e}")
+        print(f"Raw AI Output: {raw_text}")
         return {"error": "Failed to parse LLM response"}
 
 def process_image_pipeline(image_file):
